@@ -3,7 +3,7 @@ import Network
 import UIKit
 import CompanionShared
 
-/// Finds companiond over Bonjour (or a manual host), keeps one WebSocket open, and publishes snapshots.
+/// Finds claude-companiond over Bonjour (or a manual host), keeps one WebSocket open, and publishes snapshots.
 @MainActor
 final class CompanionClient: ObservableObject {
     enum Phase: Equatable {

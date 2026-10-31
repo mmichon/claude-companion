@@ -1,7 +1,7 @@
 #!/bin/bash
-# Forwards a Claude Code hook event to companiond on 127.0.0.1.
+# Forwards a Claude Code hook event to claude-companiond on 127.0.0.1.
 # PermissionRequest may be held while the phone decides; every other event returns at once.
-# Fails open: if companiond isn't running, the hook prints nothing and exits 0.
+# Fails open: if claude-companiond isn't running, the hook prints nothing and exits 0.
 
 input=$(cat)
 max=3

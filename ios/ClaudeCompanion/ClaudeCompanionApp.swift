@@ -75,7 +75,7 @@ struct SearchingView: View {
         VStack(spacing: 18) {
             ProgressView().tint(.primary).scaleEffect(1.4)
             Text(label).font(.title3.weight(.semibold)).foregroundStyle(.primary)
-            Text("Run companiond on your Mac, on the same network.")
+            Text("Run claude-companiond on your Mac, on the same network.")
                 .font(.subheadline).foregroundStyle(.gray)
             Button("Settings") { showSettings = true }
                 .buttonStyle(.bordered).tint(.gray)

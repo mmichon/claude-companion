@@ -12,7 +12,7 @@ func macIdleSeconds() -> Double {
 }
 
 final class Daemon {
-    static let queue = DispatchQueue(label: "companiond")
+    static let queue = DispatchQueue(label: "claude-companiond")
 
     /// Keyboard/mouse idle after which a permission request waits for the phone instead of the desktop.
     let awayThreshold: Double = ProcessInfo.processInfo.environment["COMPANION_AWAY_SECONDS"].flatMap(Double.init) ?? 60
@@ -328,7 +328,7 @@ final class Daemon {
             guard store.pid(forSessionId: sessionId) != nil else { return "Session not found" }
             return Actions.interrupt(sessionId: sessionId)
                 ? "Sent Esc to the session"
-                : "Couldn't press Esc — allow companiond under Privacy → Accessibility"
+                : "Couldn't press Esc — allow claude-companiond under Privacy → Accessibility"
         default:
             return "Unknown action"
         }

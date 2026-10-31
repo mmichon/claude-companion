@@ -65,7 +65,7 @@ couple of buttons, so nothing stalls unnoticed.
 ┌──────────────────────────── Mac ─────────────────────────────┐          ┌──── iPhone ────┐
 │                                                              │          │                │
 │  ~/.claude/sessions/<pid>.json ──┐                           │          │  SwiftUI board │
-│  desktop app session metadata  ──┼──▶  companiond  ◀─────────┼── WS ───▶│  sounds, cards │
+│  desktop app session metadata  ──┼──▶ claude-companiond ◀────┼── WS ───▶│  sounds, cards │
 │  Claude Code hooks ──── HTTP ────┘    (LaunchAgent,          │  :47820  │  Allow / Deny  │
 │    (127.0.0.1:47821)                   menu-bar item)        │ Bonjour  │                │
 │                                            │                 │          └────────────────┘
@@ -73,7 +73,7 @@ couple of buttons, so nothing stalls unnoticed.
 └──────────────────────────────────────────────────────────────┘
 ```
 
-**`companiond`** (Mac) is a small Swift daemon that runs as a LaunchAgent with a menu-bar item. It:
+**`claude-companiond`** (Mac) is a small Swift daemon that runs as a LaunchAgent with a menu-bar item. It:
 
 - reads `~/.claude/sessions/<pid>.json` for live busy / idle / waiting state,
 - reads the Claude desktop app's session files for titles, unread state, and turn recaps,
@@ -83,7 +83,7 @@ couple of buttons, so nothing stalls unnoticed.
 **The iOS app** (`ios/`) is SwiftUI. It finds the Mac over Bonjour (or a host you enter), pairs once, and then
 reconnects on its own.
 
-**The hook** (`hooks/companion-hook.sh`) forwards hook events to `companiond`. It fails open: if the daemon isn't
+**The hook** (`hooks/companion-hook.sh`) forwards hook events to `claude-companiond`. It fails open: if the daemon isn't
 running, it does nothing and Claude Code carries on as usual.
 
 ## Requirements
@@ -101,7 +101,7 @@ running, it does nothing and Claude Code carries on as usual.
 scripts/install-daemon.sh
 ```
 
-This builds `companiond` in release mode, installs it under `~/Library/Application Support/ClaudeCompanion/`, and
+This builds `claude-companiond` in release mode, installs it under `~/Library/Application Support/ClaudeCompanion/`, and
 loads it as a LaunchAgent. Re-run it after pulling changes. Logs go to `~/Library/Logs/ClaudeCompanion.log`.
 
 **2. Install the Claude Code hook**
@@ -130,12 +130,12 @@ notification (it's also shown in the menu bar). That's it.
 
 **5. (Optional) Allow Interrupt**
 
-**Interrupt (Esc)** presses Esc in Claude to stop a running turn. Grant `companiond` access under
+**Interrupt (Esc)** presses Esc in Claude to stop a running turn. Grant `claude-companiond` access under
 **System Settings → Privacy & Security → Accessibility**.
 
 ## Permission prompts from the phone
 
-The `PermissionRequest` hook asks `companiond` what to do:
+The `PermissionRequest` hook asks `claude-companiond` what to do:
 
 - If you've used the Mac's keyboard or mouse in the last 60 seconds, it answers "no decision" right away. The normal
   desktop prompt appears and the phone just displays it.
@@ -162,7 +162,7 @@ Then delete the app from your phone. To unpair phones without uninstalling, use 
 ## Debugging
 
 ```bash
-swift run companiond --dump
+swift run claude-companiond --dump
 ```
 
 prints the current snapshot (the same JSON the phone receives) and exits. For headless simulator runs, launch the app
@@ -173,13 +173,13 @@ only; that's how the screenshot above was made).
 
 ```
 Sources/
-  CompanionShared/   Wire protocol and models shared by Mac and iOS
-  companiond/        Mac daemon: session store, hook server, phone server, usage, menu bar
+  CompanionShared/    Wire protocol and models shared by Mac and iOS
+  claude-companiond/  Mac daemon: session store, hook server, phone server, usage, menu bar
 ios/
-  ClaudeCompanion/   SwiftUI app
-  project.yml        XcodeGen spec
-hooks/               Claude Code hook script
-scripts/             Install / uninstall for the daemon and hooks
+  ClaudeCompanion/    SwiftUI app
+  project.yml         XcodeGen spec
+hooks/                Claude Code hook script
+scripts/              Install / uninstall for the daemon and hooks
 ```
 
 ## Limitations

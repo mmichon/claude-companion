@@ -6,10 +6,10 @@ let package = Package(
     platforms: [.macOS(.v14), .iOS(.v17)],
     products: [
         .library(name: "CompanionShared", targets: ["CompanionShared"]),
-        .executable(name: "companiond", targets: ["companiond"]),
+        .executable(name: "claude-companiond", targets: ["claude-companiond"]),
     ],
     targets: [
         .target(name: "CompanionShared"),
-        .executableTarget(name: "companiond", dependencies: ["CompanionShared"]),
+        .executableTarget(name: "claude-companiond", dependencies: ["CompanionShared"]),
     ]
 )

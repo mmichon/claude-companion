@@ -184,7 +184,7 @@ public struct DNDState: Codable, Hashable, Sendable {
 
 public struct Snapshot: Codable, Hashable, Sendable {
     public var sessions: [SessionInfo]
-    /// Most recent first. Optional so an older companiond's snapshots still decode.
+    /// Most recent first. Optional so an older claude-companiond's snapshots still decode.
     public var projects: [RecentProject]?
     public var usage: UsageInfo
     public var macName: String

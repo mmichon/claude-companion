@@ -1,5 +1,5 @@
 #!/bin/bash
-# Builds companiond (release), installs it under Application Support, and runs it as a LaunchAgent.
+# Builds claude-companiond (release), installs it under Application Support, and runs it as a LaunchAgent.
 # Re-run after pulling changes. --remove unloads and deletes the agent.
 set -euo pipefail
 
@@ -17,11 +17,12 @@ if [[ "${1:-}" == "--remove" ]]; then
   exit 0
 fi
 
-(cd "$root" && swift build -c release --product companiond 2>&1 | tail -1)
+(cd "$root" && swift build -c release --product claude-companiond 2>&1 | tail -1)
 mkdir -p "$dest"
-cp "$root/.build/release/companiond" "$dest/companiond"
+cp "$root/.build/release/claude-companiond" "$dest/claude-companiond"
+rm -f "$dest/companiond"  # pre-rename binary
 # Ad-hoc sign so TCC (Accessibility, for the Esc interrupt) keeps its grant across reinstalls of the same identifier.
-codesign --force --sign - --identifier "$label" "$dest/companiond"
+codesign --force --sign - --identifier "$label" "$dest/claude-companiond"
 
 cat > "$plist" <<EOF
 <?xml version="1.0" encoding="UTF-8"?>
@@ -29,7 +30,7 @@ cat > "$plist" <<EOF
 <plist version="1.0">
 <dict>
   <key>Label</key><string>$label</string>
-  <key>ProgramArguments</key><array><string>$dest/companiond</string></array>
+  <key>ProgramArguments</key><array><string>$dest/claude-companiond</string></array>
   <key>RunAtLoad</key><true/>
   <key>KeepAlive</key><true/>
   <key>ProcessType</key><string>Interactive</string>

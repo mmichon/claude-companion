@@ -94,7 +94,7 @@ final class SessionStore {
             if status == .busy { prompts[cliId] = nil }
             var prompt = prompts[cliId]
             if status == .waiting, prompt == nil {
-                // Nothing from hooks (companiond restarted, or the hook never fired): read the request off the transcript.
+                // Nothing from hooks (claude-companiond restarted, or the hook never fired): read the request off the transcript.
                 let tail = transcriptTail(cliSessionId: cliId, cwd: cwd)
                 if let ask = tail?.pendingTools.first(where: { $0.name == "AskUserQuestion" }) {
                     prompt = Daemon.questionPrompt(ask.input)

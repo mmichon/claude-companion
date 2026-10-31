@@ -25,7 +25,7 @@ enum Actions {
 
     /// Brings the session forward and presses Esc in Claude, which stops the running turn.
     /// Not SIGINT: in the stream-json mode desktop sessions use, SIGINT kills the CLI outright.
-    /// Needs Accessibility permission for companiond (System Events keystrokes); returns false without it.
+    /// Needs Accessibility permission for claude-companiond (System Events keystrokes); returns false without it.
     static func interrupt(sessionId: String) -> Bool {
         openSession(sessionId)
         Thread.sleep(forTimeInterval: 0.8)
