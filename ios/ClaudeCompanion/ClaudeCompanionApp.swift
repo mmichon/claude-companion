@@ -14,7 +14,7 @@ struct ClaudeCompanionApp: App {
                 .environmentObject(client)
                 .environmentObject(prefs)
                 .environment(\.alerts, alerts)
-                .preferredColorScheme(.dark)
+                .preferredColorScheme(prefs.appearance.colorScheme)
                 .statusBarHidden()
                 .persistentSystemOverlays(.hidden)
                 .onAppear {
@@ -50,7 +50,7 @@ struct RootView: View {
 
     var body: some View {
         ZStack {
-            Color.black.ignoresSafeArea()
+            Color.ink(0).ignoresSafeArea()
             switch client.phase {
             case .needsPairing, .enteringCode:
                 PairingView()
@@ -73,8 +73,8 @@ struct SearchingView: View {
 
     var body: some View {
         VStack(spacing: 18) {
-            ProgressView().tint(.white).scaleEffect(1.4)
-            Text(label).font(.title3.weight(.semibold)).foregroundStyle(.white)
+            ProgressView().tint(.primary).scaleEffect(1.4)
+            Text(label).font(.title3.weight(.semibold)).foregroundStyle(.primary)
             Text("Run companiond on your Mac, on the same network.")
                 .font(.subheadline).foregroundStyle(.gray)
             Button("Settings") { showSettings = true }

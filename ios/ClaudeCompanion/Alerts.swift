@@ -18,6 +18,7 @@ final class Prefs: ObservableObject {
     @Published var idleExpanded: Bool { didSet { d.set(idleExpanded, forKey: "idleExpanded") } }
     @Published var groupByProject: Bool { didSet { d.set(groupByProject, forKey: "groupByProject") } }
     @Published var projectsExpanded: Bool { didSet { d.set(projectsExpanded, forKey: "projectsExpanded") } }
+    @Published var appearance: Appearance { didSet { d.set(appearance.rawValue, forKey: "appearance") } }
     /// Swiped-away sessions: id -> the statusSince they were dismissed at. A new status brings the card back.
     @Published var dismissed: [String: Date] {
         didSet { d.set(dismissed.mapValues(\.timeIntervalSince1970), forKey: "dismissed") }
@@ -35,6 +36,7 @@ final class Prefs: ObservableObject {
         idleExpanded = d.object(forKey: "idleExpanded") as? Bool ?? false
         groupByProject = d.object(forKey: "groupByProject") as? Bool ?? true
         projectsExpanded = d.object(forKey: "projectsExpanded") as? Bool ?? true
+        appearance = Appearance(rawValue: d.string(forKey: "appearance") ?? "") ?? .system
         dismissed = (d.dictionary(forKey: "dismissed") as? [String: Double] ?? [:]).mapValues { Date(timeIntervalSince1970: $0) }
     }
 

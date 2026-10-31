@@ -26,7 +26,7 @@ struct SessionCard: View {
             }
             Text(session.title)
                 .font(.subheadline.weight(.bold))
-                .foregroundStyle(.white)
+                .foregroundStyle(.primary)
                 .lineLimit(2)
             HStack(spacing: 6) {
                 if showProject {
@@ -36,13 +36,13 @@ struct SessionCard: View {
                 Text(metaLine)
             }
             .font(.caption2)
-            .foregroundStyle(Color(white: 0.5))
+            .foregroundStyle(Color.ink(0.5))
             .lineLimit(1)
 
             if let preview {
                 Text(preview)
                     .font(.caption)
-                    .foregroundStyle(session.status.needsYou ? Color.white : Color(white: 0.7))
+                    .foregroundStyle(session.status.needsYou ? Color.primary : Color.ink(0.7))
                     .lineLimit(session.status.needsYou ? 6 : 4)
             }
             if session.status == .busy { BusyBar(color: color) }

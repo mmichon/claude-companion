@@ -32,6 +32,9 @@ struct SettingsView: View {
                     }
                 }
                 Section("Board") {
+                    Picker("Appearance", selection: $prefs.appearance) {
+                        ForEach(Appearance.allCases, id: \.self) { Text($0.label).tag($0) }
+                    }
                     Toggle("Group by project", isOn: $prefs.groupByProject)
                 }
                 Section {
@@ -64,7 +67,7 @@ struct SettingsView: View {
             .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } } }
             .onAppear { host = client.manualHost }
         }
-        .preferredColorScheme(.dark)
+        .preferredColorScheme(prefs.appearance.colorScheme)
     }
 
     private func hour(_ h: Int) -> String {

@@ -8,7 +8,7 @@ struct PairingView: View {
     var body: some View {
         VStack(spacing: 22) {
             Image(systemName: "iphone.and.arrow.forward").font(.system(size: 54)).foregroundStyle(.orange)
-            Text("Pair with \(client.macName ?? "your Mac")").font(.title2.weight(.bold)).foregroundStyle(.white)
+            Text("Pair with \(client.macName ?? "your Mac")").font(.title2.weight(.bold)).foregroundStyle(.primary)
 
             switch client.phase {
             case .enteringCode(let error):
@@ -19,7 +19,7 @@ struct PairingView: View {
                     .textContentType(.oneTimeCode)
                     .font(.system(size: 44, weight: .bold, design: .monospaced))
                     .multilineTextAlignment(.center)
-                    .foregroundStyle(.white)
+                    .foregroundStyle(.primary)
                     .focused($focused)
                     .frame(maxWidth: 260)
                     .onChange(of: code) { _, v in

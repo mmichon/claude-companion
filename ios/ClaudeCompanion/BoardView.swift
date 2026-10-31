@@ -56,7 +56,7 @@ struct BoardView: View {
                     Text(toast)
                         .font(.callout.weight(.semibold))
                         .padding(.horizontal, 16).padding(.vertical, 10)
-                        .background(Capsule().fill(Color(white: 0.18)))
+                        .background(Capsule().fill(Color.ink(0.18)))
                         .padding(.bottom, 20)
                         .transition(.move(edge: .bottom).combined(with: .opacity))
                 }
@@ -231,7 +231,7 @@ struct HeaderView: View {
             }
             HStack(spacing: 8) {
                 Circle().fill(client.phase == .connected ? Color.green : Color.gray).frame(width: 8, height: 8)
-                Text(client.macName ?? "Mac").font(.caption.weight(.semibold)).foregroundStyle(Color(white: 0.7)).lineLimit(1)
+                Text(client.macName ?? "Mac").font(.caption.weight(.semibold)).foregroundStyle(Color.ink(0.7)).lineLimit(1)
                 Spacer(minLength: 0)
                 if let usage = client.snapshot?.usage { TodayTokens(usage: usage) }
             }
@@ -307,7 +307,7 @@ struct PlanUsageHero: View {
                         Text("\(Int(fiveLeft.rounded()))%")
                             .font(.system(size: 44, weight: .bold, design: .rounded).monospacedDigit())
                             .foregroundStyle(color)
-                        Text("left").font(.title3.weight(.semibold)).foregroundStyle(Color(white: 0.6))
+                        Text("left").font(.title3.weight(.semibold)).foregroundStyle(Color.ink(0.6))
                     }
                 }
                 Spacer(minLength: 8)
@@ -322,10 +322,10 @@ struct PlanUsageHero: View {
                             .foregroundStyle(.gray)
                             Text(reset, format: .dateTime.hour().minute())
                                 .font(.system(size: 30, weight: .bold, design: .rounded).monospacedDigit())
-                                .foregroundStyle(.white)
+                                .foregroundStyle(.primary)
                             Text(reminderNote ?? "in \(countdown(to: reset))")
                                 .font(.subheadline.weight(.semibold).monospacedDigit())
-                                .foregroundStyle(reminderNote == nil ? Color(white: 0.6) : .green)
+                                .foregroundStyle(reminderNote == nil ? Color.ink(0.6) : .green)
                         }
                         .contentShape(Rectangle())
                     }
@@ -334,7 +334,7 @@ struct PlanUsageHero: View {
             }
             GeometryReader { geo in
                 ZStack(alignment: .leading) {
-                    Capsule().fill(Color(white: 0.16))
+                    Capsule().fill(Color.ink(0.16))
                     Capsule().fill(color).frame(width: geo.size.width * min(1, fiveLeft / 100))
                 }
             }
@@ -347,7 +347,7 @@ struct PlanUsageHero: View {
                         .foregroundStyle(Self.color(left: sevenLeft))
                     if let reset = usage.sevenDayResetsAt, reset > now {
                         Text("· resets \(reset.formatted(.dateTime.weekday(.abbreviated).hour()))")
-                            .font(.caption.monospacedDigit()).foregroundStyle(Color(white: 0.5))
+                            .font(.caption.monospacedDigit()).foregroundStyle(Color.ink(0.5))
                     }
                     Spacer(minLength: 0)
                 }
@@ -355,7 +355,7 @@ struct PlanUsageHero: View {
             }
         }
         .padding(12)
-        .background(RoundedRectangle(cornerRadius: 14).fill(Color(white: 0.08)))
+        .background(RoundedRectangle(cornerRadius: 14).fill(Color.ink(0.08)))
         .overlay(RoundedRectangle(cornerRadius: 14).stroke(color.opacity(fiveLeft <= 30 ? 0.6 : 0), lineWidth: 1.5))
     }
 
@@ -381,7 +381,7 @@ struct PlanUsageHero: View {
     }
 
     static func color(left: Double) -> Color {
-        left <= 10 ? .red : left <= 30 ? .orange : Color(white: 0.92)
+        left <= 10 ? .red : left <= 30 ? .orange : Color.ink(0.92)
     }
 
     private func countdown(to date: Date) -> String {
@@ -398,7 +398,7 @@ struct TodayTokens: View {
     var body: some View {
         Text("today \(usage.todayMessages) msgs · \(compactTokens(usage.todayOutputTokens)) out · \(compactTokens(usage.todayInputTokens + usage.todayCacheReadTokens)) in")
             .font(.caption.monospacedDigit())
-            .foregroundStyle(Color(white: 0.55))
+            .foregroundStyle(Color.ink(0.55))
             .lineLimit(1)
             .minimumScaleFactor(0.7)
     }
@@ -428,7 +428,7 @@ struct IdleSection<Menu: View>: View {
                     ForEach(groups(sessions), id: \.project) { g in
                         Text(g.project)
                             .font(.caption.weight(.semibold))
-                            .foregroundStyle(Color(white: 0.45))
+                            .foregroundStyle(Color.ink(0.45))
                             .padding(.top, 6).padding(.leading, 2)
                         rows(g.sessions)
                     }
@@ -446,18 +446,18 @@ struct IdleSection<Menu: View>: View {
             ForEach(sessions) { s in
                 HStack(spacing: 8) {
                     Circle().fill(s.status.color).frame(width: 7, height: 7)
-                    Text(s.title).lineLimit(1).foregroundStyle(Color(white: 0.75))
+                    Text(s.title).lineLimit(1).foregroundStyle(Color.ink(0.75))
                     Spacer()
                     if !grouped {
-                        Text(s.project).lineLimit(1).foregroundStyle(Color(white: 0.4))
+                        Text(s.project).lineLimit(1).foregroundStyle(Color.ink(0.4))
                     }
                     if let at = s.lastActivityAt {
-                        Text(elapsed(at, now: now)).monospacedDigit().foregroundStyle(Color(white: 0.4))
+                        Text(elapsed(at, now: now)).monospacedDigit().foregroundStyle(Color.ink(0.4))
                     }
                 }
                 .font(.caption)
                 .padding(.vertical, 5).padding(.horizontal, 8)
-                .background(RoundedRectangle(cornerRadius: 10).fill(Color(white: 0.07)))
+                .background(RoundedRectangle(cornerRadius: 10).fill(Color.ink(0.07)))
                 .contentShape(Rectangle())
                 .onTapGesture { onTap(s) }
                 .contextMenu { menu(s) }
@@ -488,14 +488,14 @@ struct ProjectsSection: View {
                 LazyVGrid(columns: [GridItem(.adaptive(minimum: 280), spacing: 8)], spacing: 6) {
                     ForEach(projects) { p in
                         HStack(spacing: 8) {
-                            Image(systemName: "folder.fill").foregroundStyle(Color(white: 0.45))
-                            Text(p.name).font(.subheadline.weight(.semibold)).lineLimit(1).foregroundStyle(Color(white: 0.85))
+                            Image(systemName: "folder.fill").foregroundStyle(Color.ink(0.45))
+                            Text(p.name).font(.subheadline.weight(.semibold)).lineLimit(1).foregroundStyle(Color.ink(0.85))
                             Spacer()
-                            Text(elapsed(p.lastUsedAt, now: now)).font(.caption).monospacedDigit().foregroundStyle(Color(white: 0.4))
+                            Text(elapsed(p.lastUsedAt, now: now)).font(.caption).monospacedDigit().foregroundStyle(Color.ink(0.4))
                             NewSessionPill()
                         }
                         .padding(.vertical, 6).padding(.leading, 10).padding(.trailing, 6)
-                        .background(RoundedRectangle(cornerRadius: 10).fill(Color(white: 0.07)))
+                        .background(RoundedRectangle(cornerRadius: 10).fill(Color.ink(0.07)))
                         .contentShape(Rectangle())
                         .onTapGesture { onTap(p) }
                     }
@@ -512,9 +512,9 @@ struct NewSessionPill: View {
     var body: some View {
         Label("New", systemImage: "plus")
             .font(.subheadline.weight(.bold))
-            .foregroundStyle(.black)
+            .foregroundStyle(Color.ink(0))
             .padding(.horizontal, 14).padding(.vertical, 8)
-            .background(Capsule().fill(Color(white: 0.85)))
+            .background(Capsule().fill(Color.ink(0.85)))
             .frame(minHeight: 44)
     }
 }
@@ -529,11 +529,11 @@ struct ProjectHeader: View {
             if let top = sessions.first { Circle().fill(top.status.color).frame(width: 8, height: 8) }
             Image(systemName: "folder.fill").font(.caption)
             Text(project).font(.subheadline.weight(.bold))
-            Text("\(sessions.count)").font(.caption.monospacedDigit()).foregroundStyle(Color(white: 0.45))
+            Text("\(sessions.count)").font(.caption.monospacedDigit()).foregroundStyle(Color.ink(0.45))
             Spacer()
             NewSessionPill()
         }
-        .foregroundStyle(Color(white: 0.8))
+        .foregroundStyle(Color.ink(0.8))
         .lineLimit(1)
     }
 }

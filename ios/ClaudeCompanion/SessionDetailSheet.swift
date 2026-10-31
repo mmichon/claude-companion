@@ -19,7 +19,7 @@ struct SessionDetailSheet: View {
                 Text("Session ended").foregroundStyle(.gray).frame(maxWidth: .infinity, maxHeight: .infinity)
             }
         }
-        .background(Color.black.ignoresSafeArea())
+        .background(Color.ink(0).ignoresSafeArea())
         .presentationDetents([.large])
         .presentationDragIndicator(.visible)
     }
@@ -37,7 +37,7 @@ struct SessionDetailSheet: View {
                     .font(.system(.title2, design: .rounded).weight(.bold).monospacedDigit())
                     .foregroundStyle(color)
             }
-            Text(s.title).font(.title2.weight(.bold)).foregroundStyle(.white)
+            Text(s.title).font(.title2.weight(.bold)).foregroundStyle(.primary)
             Text(s.cwd).font(.caption.monospaced()).foregroundStyle(.gray).lineLimit(1).truncationMode(.head)
 
             ScrollView {
@@ -47,17 +47,17 @@ struct SessionDetailSheet: View {
                     } else if let prompt = s.prompt, prompt.requestId != nil, let qs = prompt.questions, !qs.isEmpty {
                         questionPicker(qs)
                     } else if let prompt = s.prompt {
-                        Text(markdown(prompt.text)).font(.body).foregroundStyle(.white).textSelection(.enabled)
+                        Text(markdown(prompt.text)).font(.body).foregroundStyle(.primary).textSelection(.enabled)
                         if !prompt.options.isEmpty {
                             VStack(alignment: .leading, spacing: 6) {
                                 ForEach(prompt.options, id: \.self) { o in
-                                    Label(o, systemImage: "circle").font(.callout).foregroundStyle(Color(white: 0.8))
+                                    Label(o, systemImage: "circle").font(.callout).foregroundStyle(Color.ink(0.8))
                                 }
                             }
                             .padding(.top, 4)
                         }
                     } else if let summary = s.summary {
-                        Text(summary).foregroundStyle(Color(white: 0.8))
+                        Text(summary).foregroundStyle(Color.ink(0.8))
                     }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -90,7 +90,7 @@ struct SessionDetailSheet: View {
                 } label: {
                     Label("Open on Mac", systemImage: "macbook").frame(maxWidth: .infinity).padding(.vertical, 6)
                 }
-                .buttonStyle(.bordered).tint(.white)
+                .buttonStyle(.bordered).tint(.primary)
                 if s.status == .busy || s.status == .permission {
                     Button(role: .destructive) { client.interrupt(s) } label: {
                         Label("Esc", systemImage: "stop.circle").padding(.vertical, 6)
@@ -108,14 +108,14 @@ struct SessionDetailSheet: View {
             Text(p.toolName).font(.headline).foregroundStyle(SessionStatus.permission.color)
             Text(p.summary)
                 .font(.callout.monospaced())
-                .foregroundStyle(.white)
+                .foregroundStyle(.primary)
                 .padding(10)
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .background(RoundedRectangle(cornerRadius: 8).fill(Color(white: 0.1)))
+                .background(RoundedRectangle(cornerRadius: 8).fill(Color.ink(0.1)))
                 .textSelection(.enabled)
             if !p.detail.isEmpty {
                 DisclosureGroup("Full request") {
-                    Text(p.detail).font(.caption.monospaced()).foregroundStyle(Color(white: 0.7)).textSelection(.enabled)
+                    Text(p.detail).font(.caption.monospaced()).foregroundStyle(Color.ink(0.7)).textSelection(.enabled)
                 }
                 .foregroundStyle(.gray)
             }
@@ -153,7 +153,7 @@ struct SessionDetailSheet: View {
             ForEach(qs, id: \.question) { q in
                 VStack(alignment: .leading, spacing: 8) {
                     if let h = q.header { Text(h.uppercased()).font(.caption.weight(.bold)).foregroundStyle(.gray) }
-                    Text(markdown(q.question)).font(.body).foregroundStyle(.white)
+                    Text(markdown(q.question)).font(.body).foregroundStyle(.primary)
                     ForEach(q.options, id: \.self) { o in
                         let on = (picks[q.question] ?? []).contains(o)
                         Button {
@@ -163,10 +163,10 @@ struct SessionDetailSheet: View {
                         } label: {
                             Label(o, systemImage: on ? (q.multiSelect ? "checkmark.square.fill" : "largecircle.fill.circle")
                                                      : (q.multiSelect ? "square" : "circle"))
-                                .font(.callout).foregroundStyle(on ? .white : Color(white: 0.8))
+                                .font(.callout).foregroundStyle(on ? .primary : Color.ink(0.8))
                                 .frame(maxWidth: .infinity, alignment: .leading)
                                 .padding(.vertical, 8).padding(.horizontal, 10)
-                                .background(RoundedRectangle(cornerRadius: 8).fill(Color(white: on ? 0.2 : 0.1)))
+                                .background(RoundedRectangle(cornerRadius: 8).fill(Color.ink(on ? 0.2 : 0.1)))
                         }
                         .buttonStyle(.plain)
                     }
