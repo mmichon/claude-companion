@@ -100,22 +100,24 @@ struct PulsingBorder: View {
     }
 }
 
+/// Driven by the clock rather than a repeatForever state animation, so ancestor
+/// `.animation(_:value:)` transactions and LazyVGrid reuse can't stall it.
 struct BusyBar: View {
     let color: Color
-    @State private var phase: CGFloat = -0.4
 
     var body: some View {
-        GeometryReader { geo in
-            ZStack(alignment: .leading) {
-                Capsule().fill(color.opacity(0.18))
-                Capsule().fill(color).frame(width: geo.size.width * 0.35)
-                    .offset(x: geo.size.width * phase)
+        TimelineView(.animation) { ctx in
+            let t = ctx.date.timeIntervalSinceReferenceDate.truncatingRemainder(dividingBy: 1.4) / 1.4
+            let phase = -0.4 + 1.45 * t
+            GeometryReader { geo in
+                ZStack(alignment: .leading) {
+                    Capsule().fill(color.opacity(0.18))
+                    Capsule().fill(color).frame(width: geo.size.width * 0.35)
+                        .offset(x: geo.size.width * phase)
+                }
+                .clipShape(Capsule())
             }
-            .clipShape(Capsule())
         }
         .frame(height: 4)
-        .onAppear {
-            withAnimation(.linear(duration: 1.4).repeatForever(autoreverses: false)) { phase = 1.05 }
-        }
     }
 }

@@ -40,6 +40,8 @@ final class CompanionClient: ObservableObject {
         #if DEBUG
         // `-debugToken <token>` on launch skips pairing, for headless simulator runs.
         if let t = UserDefaults.standard.string(forKey: "debugToken") { Keychain.token = t }
+        // `-demo YES` shows made-up sessions without a Mac, for screenshots.
+        if UserDefaults.standard.bool(forKey: "demo") { return loadDemo() }
         #endif
         watchdog?.invalidate()
         watchdog = Timer.scheduledTimer(withTimeInterval: 5, repeats: true) { [weak self] _ in
@@ -49,10 +51,22 @@ final class CompanionClient: ObservableObject {
     }
 
     func restart() {
+        #if DEBUG
+        if UserDefaults.standard.bool(forKey: "demo") { return loadDemo() }
+        #endif
         teardown()
         retryDelay = 1
         connectOrBrowse()
     }
+
+    #if DEBUG
+    private func loadDemo() {
+        let snap = DemoData.snapshot()
+        snapshot = snap
+        macName = snap.macName
+        phase = .connected
+    }
+    #endif
 
     private func teardown() {
         browser?.cancel()

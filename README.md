@@ -17,6 +17,10 @@
   <img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-blue">
 </p>
 
+<p align="center">
+  <img src="docs/screenshot.png" width="360" alt="The Companion board on an iPhone: usage, plus cards for sessions waiting on you, asking permission, and working">
+</p>
+
 ---
 
 ## Why
@@ -162,7 +166,8 @@ swift run companiond --dump
 ```
 
 prints the current snapshot (the same JSON the phone receives) and exits. For headless simulator runs, launch the app
-with `-debugToken <token>` to skip pairing.
+with `-debugToken <token>` to skip pairing, or with `-demo YES` to show made-up sessions without a Mac (Debug builds
+only; that's how the screenshot above was made).
 
 ## Project layout
 
