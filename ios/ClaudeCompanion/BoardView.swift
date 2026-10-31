@@ -206,7 +206,17 @@ struct HeaderView: View {
                     Text("All quiet").font(.headline).foregroundStyle(.gray)
                 }
                 Spacer(minLength: 4)
-                countChip(sessions.filter { $0.status.needsYou }.count, "waiting", SessionStatus.waiting.color)
+                let waiting = sessions.filter { $0.status.needsYou }
+                let hidden = waiting.filter { prefs.isDismissed($0) }
+                if hidden.isEmpty {
+                    countChip(waiting.count, "waiting", SessionStatus.waiting.color)
+                } else {
+                    // Dismissed sessions still count as waiting; tapping the chip brings their cards back.
+                    Button { restore(hidden) } label: {
+                        countChip(waiting.count, "waiting", SessionStatus.waiting.color, hidden: hidden.count)
+                    }
+                    .buttonStyle(.plain)
+                }
                 countChip(sessions.filter { $0.status == .busy }.count, "working", SessionStatus.busy.color)
                 countChip(sessions.filter { $0.status == .done }.count, "unread", SessionStatus.done.color)
                 Button { cycleDND() } label: {
@@ -245,6 +255,11 @@ struct HeaderView: View {
         }
     }
 
+    private func restore(_ hidden: [SessionInfo]) {
+        withAnimation { prefs.restore(hidden) }
+        client.showToast(hidden.count == 1 ? "Restored 1 dismissed session" : "Restored \(hidden.count) dismissed sessions")
+    }
+
     private func cycleDND() {
         let all = DNDState.Mode.allCases
         prefs.dndMode = all[(all.firstIndex(of: prefs.dndMode)! + 1) % all.count]
@@ -257,11 +272,14 @@ struct HeaderView: View {
     }
 
     @ViewBuilder
-    private func countChip(_ n: Int, _ label: String, _ color: Color) -> some View {
+    private func countChip(_ n: Int, _ label: String, _ color: Color, hidden: Int = 0) -> some View {
         if n > 0 {
             HStack(spacing: 4) {
                 Text("\(n)").font(.headline.monospacedDigit())
                 Text(label).font(.caption.weight(.semibold))
+                if hidden > 0 {
+                    Image(systemName: "eye.slash.fill").font(.caption2.weight(.semibold))
+                }
             }
             .foregroundStyle(.black)
             .padding(.horizontal, 9).padding(.vertical, 4)

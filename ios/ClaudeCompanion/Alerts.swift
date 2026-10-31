@@ -60,6 +60,7 @@ final class Prefs: ObservableObject {
     func toggleMute(_ id: String) { if muted.contains(id) { muted.remove(id) } else { muted.insert(id) } }
 
     func dismiss(_ s: SessionInfo) { dismissed[s.id] = s.statusSince }
+    func restore(_ sessions: [SessionInfo]) { for s in sessions { dismissed[s.id] = nil } }
     func isDismissed(_ s: SessionInfo) -> Bool {
         // Dates round-trip through the wire as milliseconds.
         guard let at = dismissed[s.id] else { return false }
