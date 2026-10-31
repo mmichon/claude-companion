@@ -1,0 +1,64 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="18%" r="95%">
+      <stop offset="0" stop-color="#2a2550"/>
+      <stop offset="0.45" stop-color="#121226"/>
+      <stop offset="1" stop-color="#040408"/>
+    </radialGradient>
+    <linearGradient id="glass" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.16"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0.05"/>
+    </linearGradient>
+    <linearGradient id="edge" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.35"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0.06"/>
+    </linearGradient>
+    <linearGradient id="prog" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#0a84ff"/>
+      <stop offset="1" stop-color="#64d2ff"/>
+    </linearGradient>
+    <filter id="glow" x="-100%" y="-100%" width="300%" height="300%">
+      <feGaussianBlur stdDeviation="22"/>
+    </filter>
+    <filter id="soft" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="60"/>
+    </filter>
+  </defs>
+
+  <rect width="1024" height="1024" fill="url(#bg)"/>
+
+  <!-- ambient color wash behind the cards -->
+  <ellipse cx="300" cy="300" rx="220" ry="160" fill="#ff2d95" opacity="0.28" filter="url(#soft)"/>
+  <ellipse cx="760" cy="520" rx="240" ry="160" fill="#0a84ff" opacity="0.30" filter="url(#soft)"/>
+  <ellipse cx="320" cy="760" rx="220" ry="150" fill="#30d158" opacity="0.22" filter="url(#soft)"/>
+
+  <!-- card 1: permission pending (magenta) -->
+  <g>
+    <rect x="152" y="194" width="720" height="180" rx="48" fill="url(#glass)" stroke="url(#edge)" stroke-width="3"/>
+    <circle cx="252" cy="284" r="40" fill="#ff2d95" filter="url(#glow)"/>
+    <circle cx="252" cy="284" r="54" fill="none" stroke="#ff2d95" stroke-opacity="0.55" stroke-width="6"/>
+    <circle cx="252" cy="284" r="30" fill="#ff2d95"/>
+    <rect x="330" y="254" width="380" height="26" rx="13" fill="#ffffff" fill-opacity="0.9"/>
+    <rect x="330" y="300" width="250" height="20" rx="10" fill="#ffffff" fill-opacity="0.38"/>
+  </g>
+
+  <!-- card 2: working (blue, progress bar) -->
+  <g>
+    <rect x="152" y="422" width="720" height="180" rx="48" fill="url(#glass)" stroke="url(#edge)" stroke-width="3"/>
+    <circle cx="252" cy="512" r="40" fill="#0a84ff" filter="url(#glow)"/>
+    <circle cx="252" cy="512" r="30" fill="#0a84ff"/>
+    <rect x="330" y="482" width="320" height="26" rx="13" fill="#ffffff" fill-opacity="0.9"/>
+    <rect x="330" y="530" width="460" height="14" rx="7" fill="#ffffff" fill-opacity="0.14"/>
+    <rect x="330" y="530" width="290" height="14" rx="7" fill="url(#prog)"/>
+  </g>
+
+  <!-- card 3: done (green) -->
+  <g>
+    <rect x="152" y="650" width="720" height="180" rx="48" fill="url(#glass)" stroke="url(#edge)" stroke-width="3"/>
+    <circle cx="252" cy="740" r="40" fill="#30d158" filter="url(#glow)"/>
+    <circle cx="252" cy="740" r="30" fill="#30d158"/>
+    <path d="M238 741 l10 10 l19 -21" fill="none" stroke="#04140a" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+    <rect x="330" y="710" width="400" height="26" rx="13" fill="#ffffff" fill-opacity="0.9"/>
+    <rect x="330" y="756" width="200" height="20" rx="10" fill="#ffffff" fill-opacity="0.38"/>
+  </g>
+</svg>
