@@ -100,24 +100,85 @@ struct PulsingBorder: View {
     }
 }
 
-/// Driven by the clock rather than a repeatForever state animation, so ancestor
-/// `.animation(_:value:)` transactions and LazyVGrid reuse can't stall it.
+/// Runs as a Core Animation layer animation on the render server, so SwiftUI
+/// re-renders, ancestor transactions, LazyVGrid reuse, sheets and backgrounding
+/// can't stall it (TimelineView(.animation) still froze occasionally).
 struct BusyBar: View {
     let color: Color
 
     var body: some View {
-        TimelineView(.animation) { ctx in
-            let t = ctx.date.timeIntervalSinceReferenceDate.truncatingRemainder(dividingBy: 1.4) / 1.4
-            let phase = -0.4 + 1.45 * t
-            GeometryReader { geo in
-                ZStack(alignment: .leading) {
-                    Capsule().fill(color.opacity(0.18))
-                    Capsule().fill(color).frame(width: geo.size.width * 0.35)
-                        .offset(x: geo.size.width * phase)
-                }
-                .clipShape(Capsule())
-            }
+        BusyBarRepresentable(color: UIColor(color)).frame(height: 4)
+    }
+}
+
+private struct BusyBarRepresentable: UIViewRepresentable {
+    let color: UIColor
+    func makeUIView(context: Context) -> BusyBarView { BusyBarView() }
+    func updateUIView(_ view: BusyBarView, context: Context) { view.color = color }
+}
+
+final class BusyBarView: UIView {
+    private static let period: CFTimeInterval = 1.4
+    private let track = CALayer()
+    private let thumb = CALayer()
+    private var animatedWidth: CGFloat = 0
+
+    var color: UIColor = .white {
+        didSet {
+            guard color != oldValue else { return }
+            CATransaction.begin(); CATransaction.setDisableActions(true)
+            track.backgroundColor = color.withAlphaComponent(0.18).cgColor
+            thumb.backgroundColor = color.cgColor
+            CATransaction.commit()
         }
-        .frame(height: 4)
+    }
+
+    override init(frame: CGRect) {
+        super.init(frame: frame)
+        isUserInteractionEnabled = false
+        track.masksToBounds = true
+        thumb.anchorPoint = .zero
+        layer.addSublayer(track)
+        track.addSublayer(thumb)
+        NotificationCenter.default.addObserver(self, selector: #selector(resume),
+                                               name: UIApplication.willEnterForegroundNotification, object: nil)
+    }
+
+    required init?(coder: NSCoder) { fatalError() }
+
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        CATransaction.begin(); CATransaction.setDisableActions(true)
+        track.frame = bounds
+        track.cornerRadius = bounds.height / 2
+        thumb.bounds = CGRect(x: 0, y: 0, width: bounds.width * 0.35, height: bounds.height)
+        thumb.cornerRadius = bounds.height / 2
+        thumb.position = .zero
+        CATransaction.commit()
+        startIfNeeded(force: bounds.width != animatedWidth)
+    }
+
+    override func didMoveToWindow() {
+        super.didMoveToWindow()
+        startIfNeeded(force: false)
+    }
+
+    @objc private func resume() { startIfNeeded(force: true) }
+
+    private func startIfNeeded(force: Bool) {
+        guard window != nil, bounds.width > 0 else { return }
+        if !force, thumb.animation(forKey: "slide") != nil { return }
+        let w = bounds.width
+        let a = CABasicAnimation(keyPath: "position.x")
+        a.fromValue = -0.4 * w
+        a.toValue = 1.05 * w
+        a.duration = Self.period
+        a.repeatCount = .infinity
+        a.isRemovedOnCompletion = false
+        // Phase-locked to the wall clock so restarts don't jump and all bars sweep together.
+        a.beginTime = thumb.convertTime(CACurrentMediaTime(), from: nil)
+            - Date().timeIntervalSinceReferenceDate.truncatingRemainder(dividingBy: Self.period)
+        thumb.add(a, forKey: "slide")
+        animatedWidth = w
     }
 }

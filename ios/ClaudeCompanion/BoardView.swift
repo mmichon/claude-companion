@@ -6,15 +6,18 @@ struct BoardView: View {
     @EnvironmentObject var prefs: Prefs
     @State private var selected: SessionInfo?
     @State private var showSettings = false
+    @Environment(\.isUpsideDown) private var isUpsideDown
 
     var body: some View {
         TimelineView(.periodic(from: .now, by: 1)) { ctx in
             let now = ctx.date
             let sessions = client.snapshot?.sessions ?? []
             let (active, idle) = partition(sessions)
+            GeometryReader { geo in
+            let layout = HousingLayout(size: geo.size, insets: geo.safeAreaInsets, upsideDown: isUpsideDown)
             ZStack(alignment: .bottom) {
                 VStack(spacing: 0) {
-                    HeaderView(sessions: sessions, now: now, showSettings: $showSettings)
+                    HeaderView(sessions: sessions, now: now, showSettings: $showSettings, showsTopRow: layout == .inline)
                     ScrollView {
                         if prefs.groupByProject {
                             ForEach(groups(active), id: \.project) { g in
@@ -60,6 +63,8 @@ struct BoardView: View {
                         .padding(.bottom, 20)
                         .transition(.move(edge: .bottom).combined(with: .opacity))
                 }
+                HousingStats(layout: layout, size: geo.size, insets: geo.safeAreaInsets,
+                             sessions: sessions, showSettings: $showSettings)
                 if prefs.isNight(now) {
                     // Dim, not black: still readable from the desk, passes taps through.
                     Color.black.opacity(0.65).ignoresSafeArea().allowsHitTesting(false)
@@ -67,11 +72,12 @@ struct BoardView: View {
             }
             .animation(.easeOut(duration: 0.25), value: client.toast)
             .animation(.default, value: (prefs.groupByProject ? groups(active).flatMap(\.sessions) : active).map(\.id))
+            }
         }
         .sheet(item: $selected) { s in
-            SessionDetailSheet(sessionId: s.id)
+            SessionDetailSheet(sessionId: s.id).flipWhenUpsideDown()
         }
-        .sheet(isPresented: $showSettings) { SettingsView() }
+        .sheet(isPresented: $showSettings) { SettingsView().flipWhenUpsideDown() }
         .onChange(of: prefs.dndState) { _, d in client.setDND(d) }
         .onChange(of: client.phase) { _, p in if p == .connected { client.setDND(prefs.dndState) } }
         .onChange(of: client.snapshot) { _, snap in if let snap { prefs.pruneDismissed(snap.sessions) } }
@@ -82,7 +88,7 @@ struct BoardView: View {
             ForEach(sessions) { s in
                 SessionCard(session: s, now: now, pinned: prefs.pinned.contains(s.id), muted: prefs.muted.contains(s.id),
                             showProject: !prefs.groupByProject)
-                    .onTapGesture { client.open(s) }
+                    .onTapGesture { if s.answerableFromPhone { selected = s } else { client.open(s) } }
                     .contextMenu { menu(for: s) }
                     .swipeToDismiss(enabled: !prefs.pinned.contains(s.id)) { dismiss(s) }
             }
@@ -198,32 +204,15 @@ struct HeaderView: View {
     let sessions: [SessionInfo]
     let now: Date
     @Binding var showSettings: Bool
+    /// Off when the chips and buttons sit beside the sensor housing instead.
+    var showsTopRow = true
 
     var body: some View {
         VStack(spacing: 8) {
-            HStack(spacing: 10) {
-                if sessions.allSatisfy({ !$0.status.needsYou && $0.status != .busy && $0.status != .done }) {
-                    Text("All quiet").font(.headline).foregroundStyle(.gray)
-                }
-                Spacer(minLength: 4)
-                let waiting = sessions.filter { $0.status.needsYou }
-                let hidden = waiting.filter { prefs.isDismissed($0) }
-                if hidden.isEmpty {
-                    countChip(waiting.count, "waiting", SessionStatus.waiting.color)
-                } else {
-                    // Dismissed sessions still count as waiting; tapping the chip brings their cards back.
-                    Button { restore(hidden) } label: {
-                        countChip(waiting.count, "waiting", SessionStatus.waiting.color, hidden: hidden.count)
-                    }
-                    .buttonStyle(.plain)
-                }
-                countChip(sessions.filter { $0.status == .busy }.count, "working", SessionStatus.busy.color)
-                countChip(sessions.filter { $0.status == .done }.count, "unread", SessionStatus.done.color)
-                Button { cycleDND() } label: {
-                    Image(systemName: dndSymbol).font(.title3).foregroundStyle(prefs.dndMode == .off ? .gray : .yellow)
-                }
-                Button { showSettings = true } label: {
-                    Image(systemName: "gearshape.fill").font(.title3).foregroundStyle(.gray)
+            if showsTopRow {
+                HStack(spacing: 10) {
+                    StatusChips(sessions: sessions, style: .full)
+                    HeaderButtons(showSettings: $showSettings)
                 }
             }
             if let usage = client.snapshot?.usage, usage.fiveHourPct != nil {
@@ -246,6 +235,84 @@ struct HeaderView: View {
         .padding(.top, 6)
         .padding(.bottom, 4)
     }
+}
+
+/// "All quiet" or the waiting / working / unread counts.
+struct StatusChips: View {
+    enum Style { case full, compact }
+    @EnvironmentObject var client: CompanionClient
+    @EnvironmentObject var prefs: Prefs
+    let sessions: [SessionInfo]
+    let style: Style
+    var axis: Axis = .horizontal
+
+    var body: some View {
+        let layout = axis == .horizontal ? AnyLayout(HStackLayout(spacing: style == .full ? 10 : 5))
+                                         : AnyLayout(VStackLayout(spacing: 6))
+        layout {
+            if sessions.allSatisfy({ !$0.status.needsYou && $0.status != .busy && $0.status != .done }) {
+                Text(style == .full ? "All quiet" : "Quiet").font(style == .full ? .headline : .caption.weight(.semibold))
+                    .foregroundStyle(.gray).fixedSize()
+            }
+            if style == .full { Spacer(minLength: 4) }
+            let waiting = sessions.filter { $0.status.needsYou }
+            let hidden = waiting.filter { prefs.isDismissed($0) }
+            if hidden.isEmpty {
+                countChip(waiting.count, "waiting", SessionStatus.waiting.color)
+            } else {
+                // Dismissed sessions still count as waiting; tapping the chip brings their cards back.
+                Button { restore(hidden) } label: {
+                    countChip(waiting.count, "waiting", SessionStatus.waiting.color, hidden: hidden.count)
+                }
+                .buttonStyle(.plain)
+            }
+            countChip(sessions.filter { $0.status == .busy }.count, "working", SessionStatus.busy.color)
+            countChip(sessions.filter { $0.status == .done }.count, "unread", SessionStatus.done.color)
+        }
+    }
+
+    private func restore(_ hidden: [SessionInfo]) {
+        withAnimation { prefs.restore(hidden) }
+        client.showToast(hidden.count == 1 ? "Restored 1 dismissed session" : "Restored \(hidden.count) dismissed sessions")
+    }
+
+    @ViewBuilder
+    private func countChip(_ n: Int, _ label: String, _ color: Color, hidden: Int = 0) -> some View {
+        if n > 0 {
+            HStack(spacing: 4) {
+                Text("\(n)").font(.headline.monospacedDigit())
+                // Beside the housing there's only room for the number; the color says which count it is.
+                if style == .full { Text(label).font(.caption.weight(.semibold)) }
+                if hidden > 0 {
+                    Image(systemName: "eye.slash.fill").font(.caption2.weight(.semibold))
+                }
+            }
+            .foregroundStyle(.black)
+            .padding(.horizontal, style == .full ? 9 : 7).padding(.vertical, 4)
+            .background(Capsule().fill(color))
+            .fixedSize()
+        }
+    }
+}
+
+/// Do-not-disturb cycle and settings.
+struct HeaderButtons: View {
+    @EnvironmentObject var client: CompanionClient
+    @EnvironmentObject var prefs: Prefs
+    @Binding var showSettings: Bool
+    var axis: Axis = .horizontal
+
+    var body: some View {
+        let layout = axis == .horizontal ? AnyLayout(HStackLayout(spacing: 10)) : AnyLayout(VStackLayout(spacing: 14))
+        layout {
+            Button { cycleDND() } label: {
+                Image(systemName: dndSymbol).font(.title3).foregroundStyle(prefs.dndMode == .off ? .gray : .yellow)
+            }
+            Button { showSettings = true } label: {
+                Image(systemName: "gearshape.fill").font(.title3).foregroundStyle(.gray)
+            }
+        }
+    }
 
     private var dndSymbol: String {
         switch prefs.dndMode {
@@ -253,11 +320,6 @@ struct HeaderView: View {
         case .pinnedOnly: return "pin.fill"
         case .muted: return "moon.fill"
         }
-    }
-
-    private func restore(_ hidden: [SessionInfo]) {
-        withAnimation { prefs.restore(hidden) }
-        client.showToast(hidden.count == 1 ? "Restored 1 dismissed session" : "Restored \(hidden.count) dismissed sessions")
     }
 
     private func cycleDND() {
@@ -270,21 +332,67 @@ struct HeaderView: View {
         }
         client.showToast(message)
     }
+}
 
-    @ViewBuilder
-    private func countChip(_ n: Int, _ label: String, _ color: Color, hidden: Int = 0) -> some View {
-        if n > 0 {
-            HStack(spacing: 4) {
-                Text("\(n)").font(.headline.monospacedDigit())
-                Text(label).font(.caption.weight(.semibold))
-                if hidden > 0 {
-                    Image(systemName: "eye.slash.fill").font(.caption2.weight(.semibold))
-                }
+/// Where the header's chips and buttons go. The status bar is hidden, so on a phone with a Dynamic Island
+/// or notch the strip around the housing is empty: in portrait the ears either side of it, in landscape
+/// the side insets. Upside down the housing ends up at the visual bottom, so the header keeps its own row.
+enum HousingLayout: Equatable {
+    case inline, ears, sideStrips
+
+    init(size: CGSize, insets: EdgeInsets, upsideDown: Bool) {
+        let landscape = size.width > size.height
+        if landscape, min(insets.leading, insets.trailing) >= 40 {
+            self = .sideStrips
+        } else if !landscape, !upsideDown, insets.top >= 44 {
+            self = .ears
+        } else {
+            self = .inline
+        }
+    }
+}
+
+struct HousingStats: View {
+    let layout: HousingLayout
+    let size: CGSize
+    let insets: EdgeInsets
+    let sessions: [SessionInfo]
+    @Binding var showSettings: Bool
+
+    var body: some View {
+        switch layout {
+        case .inline:
+            EmptyView()
+        case .ears:
+            // A Dynamic Island is ~126pt wide (top inset ≥ 51pt); a notch is ~210pt.
+            let housing: CGFloat = insets.top >= 51 ? 126 : 210
+            let corner: CGFloat = 26 // keep clear of the rounded display corners
+            let ear = max(0, (size.width - housing) / 2 - corner - 8)
+            HStack(spacing: 0) {
+                StatusChips(sessions: sessions, style: .compact)
+                    .frame(width: ear, alignment: .leading)
+                Spacer(minLength: housing + 16)
+                HeaderButtons(showSettings: $showSettings)
+                    .frame(width: ear, alignment: .trailing)
             }
-            .foregroundStyle(.black)
-            .padding(.horizontal, 9).padding(.vertical, 4)
-            .background(Capsule().fill(color))
-            .fixedSize()
+            .padding(.horizontal, corner)
+            .frame(height: insets.top)
+            .frame(maxHeight: .infinity, alignment: .top)
+            .offset(y: -insets.top)
+        case .sideStrips:
+            // The housing sits mid-height in one strip, so both strips keep to their upper half.
+            HStack(spacing: 0) {
+                StatusChips(sessions: sessions, style: .compact, axis: .vertical)
+                    .frame(width: insets.leading)
+                    .offset(x: -insets.leading)
+                Spacer(minLength: 0)
+                HeaderButtons(showSettings: $showSettings, axis: .vertical)
+                    .frame(width: insets.trailing)
+                    .offset(x: insets.trailing)
+            }
+            .padding(.top, 28)
+            .frame(maxHeight: size.height / 2 - 70, alignment: .top)
+            .frame(maxHeight: .infinity, alignment: .top)
         }
     }
 }

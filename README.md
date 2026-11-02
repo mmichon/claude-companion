@@ -36,9 +36,12 @@ couple of buttons, so nothing stalls unnoticed.
   how long it has been in that state, and the latest turn recap.
 - **Sounds and escalation.** Audio alerts when a session needs you or finishes, with adjustable volume. Waiting cards
   turn red after 5 minutes.
-- **Allow / Deny from the phone.** When you're away from the Mac, permission prompts are held and answered from the
-  phone. When you're at the Mac, the normal desktop prompt is used.
-- **Answer questions.** `AskUserQuestion` prompts show up on the phone with their options.
+- **Allow / Deny from the phone.** Permission prompts in desktop sessions wait on the phone until you open that
+  session on the Mac. CLI sessions are held for the phone while the Mac is idle.
+- **Answer questions.** `AskUserQuestion` prompts show up on the phone with their options, plus a free-text
+  "Other". When a desktop session's turn ends on a plain question, tap its card and type a short reply: it's sent as
+  your next message (needs the Accessibility permission, like Interrupt). If Claude ended its turn with suggested
+  answers, they show up as buttons.
 - **Tap to open.** Tapping a card brings that session forward on the Mac. You can also start a new session in a recent
   project, or interrupt a running turn (Esc).
 - **Usage at a glance.** Today's messages and tokens, plus plan usage and reset time. One tap adds a "resume work"
@@ -130,16 +133,24 @@ notification (it's also shown in the menu bar). That's it.
 
 **5. (Optional) Allow Interrupt**
 
-**Interrupt (Esc)** presses Esc in Claude to stop a running turn. Grant `claude-companiond` access under
-**System Settings → Privacy & Security → Accessibility**.
+**Interrupt (Esc)** presses Esc in Claude to stop a running turn, and replies from the phone are pasted into the
+session's message box. Both are typed by `claude-companion-keys`, a small helper that runs next to the daemon and asks
+macOS for Accessibility access at launch; turn it on under **System Settings → Privacy & Security → Device Control and Data Access** (**Accessibility** on older macOS).
+The installer only replaces the helper when its code changes, so daemon updates keep the grant.
 
 ## Permission prompts from the phone
 
-The `PermissionRequest` hook asks `claude-companiond` what to do:
+The `PermissionRequest` hook asks `claude-companiond` what to do.
+
+**Desktop sessions** go to the phone first, even while you're at the Mac: the phone shows **Allow / Deny** (or the
+question's options). The prompt moves to the desktop as soon as you open that session in Claude (or are using Claude
+with it already on screen), or after 9.5 minutes.
+
+**CLI sessions** have no way to tell which one you're looking at, so they use an idle rule:
 
 - If you've used the Mac's keyboard or mouse in the last 60 seconds, it answers "no decision" right away. The normal
-  desktop prompt appears and the phone just displays it.
-- If you haven't, the hook is held and the phone shows **Allow / Deny**. It falls back to the desktop prompt as soon as
+  prompt appears and the phone just displays it.
+- If you haven't, the hook is held and the phone shows **Allow / Deny**. It falls back to the normal prompt as soon as
   you touch the Mac, or after 9.5 minutes.
 
 To change the 60 seconds, set `COMPANION_AWAY_SECONDS` in the LaunchAgent's environment.

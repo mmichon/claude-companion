@@ -252,6 +252,11 @@ final class CompanionClient: ObservableObject {
         send(WireMessage(type: .answer, requestId: requestId, answers: answers))
     }
 
+    /// Types `text` into the session's message box on the Mac and sends it.
+    func reply(_ s: SessionInfo, text: String) {
+        send(WireMessage(type: .reply, sessionId: s.id, message: text))
+    }
+
     func setDND(_ d: DNDState) {
         send(WireMessage(type: .setDND, dnd: d))
     }

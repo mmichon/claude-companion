@@ -20,12 +20,16 @@ enum DemoData {
             session(2, "Migrate settings to SwiftData", "weather-app", .waiting, since: 190,
                     summary: "Two migration paths are possible; which one should I take?",
                     prompt: PendingPrompt(kind: .question, text: "Keep the old UserDefaults keys as a fallback?",
-                                          options: ["Yes, for one release", "No, migrate once"])),
+                                          options: ["Yes, for one release", "No, migrate once"],
+                                          questions: [.init(question: "Keep the old UserDefaults keys as a fallback?",
+                                                            header: "Migration", options: ["Yes, for one release", "No, migrate once"])],
+                                          requestId: "demo-question")),
             session(3, "Fix flaky checkout test", "storefront", .busy, since: 75),
             session(4, "Write release notes for 2.4", "docs-site", .busy, since: 320),
             session(5, "Dark mode for the dashboard", "admin-panel", .done, since: 540,
                     summary: "Dark mode is in, with tokens for every surface. Screenshots attached to the PR."),
-            session(6, "Bump dependencies", "cli-tools", .idle, since: 7200),
+            session(6, "Bump dependencies", "cli-tools", .waiting, since: 95,
+                    prompt: PendingPrompt(kind: .message, text: "Lodash 5 drops two helpers we use. Should I replace them now or pin 4.x?")),
             session(7, "Investigate memory leak", "image-pipeline", .idle, since: 14400),
         ]
         let projects = ["storefront", "weather-app", "docs-site", "admin-panel"].enumerated().map { i, name in

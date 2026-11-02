@@ -7,9 +7,12 @@ let package = Package(
     products: [
         .library(name: "CompanionShared", targets: ["CompanionShared"]),
         .executable(name: "claude-companiond", targets: ["claude-companiond"]),
+        .executable(name: "claude-companion-keys", targets: ["claude-companion-keys"]),
     ],
     targets: [
         .target(name: "CompanionShared"),
         .executableTarget(name: "claude-companiond", dependencies: ["CompanionShared"]),
+        // No dependencies on purpose: see its main.swift.
+        .executableTarget(name: "claude-companion-keys"),
     ]
 )

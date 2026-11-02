@@ -67,8 +67,11 @@ final class SessionStore {
             // "idle", but it's still waiting on you until you send the next message.
             let turnEndedAfterUser = (lastEdge ?? .distantPast) >= (ms(desk?["latestUserFrameAt"]) ?? .distantPast)
             let wrapUpAsk = (wrapUpObj?["needsUser"] as? String).flatMap { $0.isEmpty ? nil : $0 }
+            // The summary's "blocked" is the summarizer's guess, not a pending prompt: once you've opened the session
+            // since that turn ended, you've seen it and it drops back to idle.
             let summaryBlocked = summaryObj?["status_category"] as? String == "blocked"
                 && desk?["postTurnSummaryFor"] as? String == desk?["lastAssistantUuid"] as? String
+                && unread
             let endedOnQuestion = turnEndedAfterUser && (wrapUpAsk != nil || summaryBlocked)
             let errorText = (desk?["error"] as? String) ?? ((desk?["error"] as? [String: Any])?["message"] as? String)
 
@@ -89,6 +92,12 @@ final class SessionStore {
             } else {
                 status = .idle
             }
+            // When a turn ends the CLI goes idle a beat before Claude records the turn edge, so busy -> done briefly
+            // reads as idle and the card drops out of the board. Hold busy until the desktop metadata catches up.
+            if status == .idle, statusSince[id]?.0 == .busy, hostId != nil,
+               Date().timeIntervalSince(ms(reg["statusUpdatedAt"]) ?? .distantPast) < 3 {
+                status = .busy
+            }
 
             // An answered AskUserQuestion resumes the turn without a new prompt hook.
             if status == .busy { prompts[cliId] = nil }
@@ -108,6 +117,8 @@ final class SessionStore {
                 if prompt == nil, permission == nil {
                     let text = wrapUpAsk ?? tail?.lastText ?? needsAction ?? lastNotification[cliId] ?? "Claude is waiting for your input."
                     prompt = PendingPrompt(kind: .message, text: text)
+                    // The wrap-up's buttons, when its question is the one showing.
+                    if let ask = wrapUpAsk, let w = tail?.wrapUpAsk, w.ask == ask { prompt?.options = w.labels }
                 }
             }
             if !status.needsYou { prompt = nil }
@@ -163,6 +174,15 @@ final class SessionStore {
             return reg.value["hostSessionId"] as? String
         }
         return nil
+    }
+
+    /// For a desktop session: when you last opened it in Claude, and whether it's the one Claude is showing (the most
+    /// recently focused). Nil for CLI sessions, which have no such signal.
+    func desktopFocus(forCli cliId: String) -> (lastFocused: Date?, isCurrent: Bool)? {
+        guard let host = hostSessionId(forCli: cliId) else { return nil }
+        let mine = ms(desktopMeta(for: host)?["lastFocusedAt"])
+        let newest = desktopCache.values.compactMap { ms($0.value["lastFocusedAt"]) }.max()
+        return (mine, mine != nil && mine == newest)
     }
 
     // MARK: recent projects
@@ -284,7 +304,12 @@ final class SessionStore {
     // MARK: files
 
     struct PendingTool { var id: String; var name: String; var input: [String: Any] }
-    struct TranscriptTail { var lastText: String?; var pendingTools: [PendingTool] }
+    struct TranscriptTail {
+        var lastText: String?
+        var pendingTools: [PendingTool]
+        /// The last wrap-up's question and its reply buttons (app actions like "commit" left out).
+        var wrapUpAsk: (ask: String, labels: [String])?
+    }
     private var tailCache: [String: Cached<TranscriptTail>] = [:]
 
     /// From the tail of the session's transcript: the last text Claude wrote, and the tool calls still
@@ -299,7 +324,7 @@ final class SessionStore {
         let size = (try? handle.seekToEnd()) ?? 0
         try? handle.seek(toOffset: size > 262_144 ? size - 262_144 : 0)
         let data = (try? handle.readToEnd()) ?? Data()
-        var tail = TranscriptTail(lastText: nil, pendingTools: [])
+        var tail = TranscriptTail(lastText: nil, pendingTools: [], wrapUpAsk: nil)
         for line in data.split(separator: 0x0A) {
             guard let obj = (try? JSONSerialization.jsonObject(with: Data(line))) as? [String: Any],
                   obj["isSidechain"] as? Bool != true,
@@ -311,6 +336,11 @@ final class SessionStore {
                 if !joined.isEmpty { tail.lastText = String(joined.suffix(6000)) }
                 for block in content where block["type"] as? String == "tool_use" {
                     guard let id = block["id"] as? String, let name = block["name"] as? String else { continue }
+                    if name.hasSuffix("__wrap_up"), let input = block["input"] as? [String: Any] {
+                        let labels = (input["actions"] as? [[String: Any]] ?? [])
+                            .filter { $0["action"] == nil }.compactMap { $0["label"] as? String }
+                        tail.wrapUpAsk = (input["ask"] as? String).map { ($0, labels) }
+                    }
                     tail.pendingTools.append(PendingTool(id: id, name: name, input: block["input"] as? [String: Any] ?? [:]))
                 }
             case "user":

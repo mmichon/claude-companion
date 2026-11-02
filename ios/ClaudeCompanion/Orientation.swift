@@ -46,9 +46,23 @@ private struct FlipWhenUpsideDown: ViewModifier {
         content
             .rotationEffect(.degrees(watcher.isUpsideDown ? 180 : 0))
             .animation(.easeInOut(duration: 0.3), value: watcher.isUpsideDown)
+            .environment(\.isUpsideDown, watcher.isUpsideDown)
+    }
+}
+
+private struct IsUpsideDownKey: EnvironmentKey {
+    static let defaultValue = false
+}
+
+extension EnvironmentValues {
+    /// True while the content is turned 180°, so the sensor housing sits at the visual bottom.
+    var isUpsideDown: Bool {
+        get { self[IsUpsideDownKey.self] }
+        set { self[IsUpsideDownKey.self] = newValue }
     }
 }
 
 extension View {
+    /// Sheets are presented outside the root view's rotation, so each sheet's content needs its own flip.
     func flipWhenUpsideDown() -> some View { modifier(FlipWhenUpsideDown()) }
 }

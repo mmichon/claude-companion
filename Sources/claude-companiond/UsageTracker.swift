@@ -32,9 +32,11 @@ final class UsageTracker {
             day = today
             offsets = [:]
             seenMessageIds = []
-            usage = UsageInfo()
-            apiSampledAt = nil
-            lastFetch = .distantPast
+            // Plan windows don't follow the calendar day; only the token totals start over.
+            usage.todayMessages = 0
+            usage.todayInputTokens = 0
+            usage.todayOutputTokens = 0
+            usage.todayCacheReadTokens = 0
         }
         scanTranscripts()
         fetchPlanUsage()
@@ -66,6 +68,8 @@ final class UsageTracker {
                     return ((w?["utilization"] as? NSNumber)?.doubleValue, (w?["resets_at"] as? String).flatMap(Self.parseISO))
                 }
                 (self.usage.fiveHourPct, self.usage.fiveHourResetsAt) = window("five_hour")
+                // No open 5-hour window means none of it is used yet.
+                if self.usage.fiveHourPct == nil { self.usage.fiveHourPct = 0 }
                 (self.usage.sevenDayPct, self.usage.sevenDayResetsAt) = window("seven_day")
                 self.usage.planSampledAt = Date()
                 self.apiSampledAt = Date()
@@ -150,13 +154,15 @@ final class UsageTracker {
               let samples = obj["samples"] as? [[String: Any]],
               let last = samples.last, let at = ms(last["t"]),
               let u = last["u"] as? [String: Any] else { return }
-        // Older than 6 hours says nothing about the current window.
+        // Idle long enough for Claude Code's token to lapse: keep the last API answer, whose reset
+        // times already tell the phone when each window refilled.
+        if apiSampledAt != nil, Date().timeIntervalSince(at) >= 10 * 60 { return }
+        // A sample older than 6 hours predates the current 5-hour window, so that window is untouched.
         guard Date().timeIntervalSince(at) < 6 * 3600 else {
-            usage.fiveHourPct = nil
-            usage.sevenDayPct = nil
+            usage.fiveHourPct = 0
             usage.fiveHourResetsAt = nil
-            usage.sevenDayResetsAt = nil
-            usage.planSampledAt = nil
+            usage.sevenDayPct = Date().timeIntervalSince(at) < 7 * 86_400 ? (u["sd"] as? NSNumber)?.doubleValue : nil
+            usage.planSampledAt = at
             return
         }
         usage.fiveHourPct = (u["fh"] as? NSNumber)?.doubleValue

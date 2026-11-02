@@ -81,7 +81,7 @@ struct SearchingView: View {
                 .buttonStyle(.bordered).tint(.gray)
         }
         .padding()
-        .sheet(isPresented: $showSettings) { SettingsView() }
+        .sheet(isPresented: $showSettings) { SettingsView().flipWhenUpsideDown() }
     }
 
     private var label: String {

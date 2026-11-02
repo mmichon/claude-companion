@@ -103,7 +103,7 @@ final class Daemon {
         let busy = Set((lastSnapshot?.sessions ?? []).filter { $0.status == .busy }.map(\.cliSessionId))
         for (cli, p) in permissions {
             if let respond = p.respond {
-                if idle < awayThreshold || Date().timeIntervalSince(p.info.createdAt) > holdLimit {
+                if Date().timeIntervalSince(p.info.createdAt) > holdLimit || belongsOnMac(cli, since: p.info.createdAt, idle: idle) {
                     logLine("releasing permission \(p.info.requestId) to the desktop prompt")
                     respond(Data("{}".utf8))
                     permissions[cli]?.respond = nil
@@ -113,7 +113,8 @@ final class Daemon {
                 permissions[cli] = nil
             }
         }
-        for (cli, q) in questions where idle < awayThreshold || Date().timeIntervalSince(q.createdAt) > holdLimit {
+        for (cli, q) in questions where Date().timeIntervalSince(q.createdAt) > holdLimit
+            || belongsOnMac(cli, since: q.createdAt, idle: idle) {
             logLine("releasing question \(q.requestId) to the desktop prompt")
             q.respond(Data("{}".utf8))
             questions[cli] = nil
@@ -157,7 +158,7 @@ final class Daemon {
         dropPermission(cli)
         let tool = obj["tool_name"] as? String ?? "Tool"
         let input = obj["tool_input"] as? [String: Any] ?? [:]
-        let away = macIdleSeconds() >= awayThreshold
+        let away = !belongsOnMac(cli, since: Date(), idle: macIdleSeconds())
         // Desktop sessions ask AskUserQuestion through the permission hook: show it as the question it is.
         if tool == "AskUserQuestion", var prompt = Self.questionPrompt(input) {
             let requestId = UUID().uuidString
@@ -176,6 +177,16 @@ final class Daemon {
         permissions[cli] = PendingPermission(info: info, cliSessionId: cli, respond: away ? respond : nil)
         logLine("permission \(info.requestId) [\(cli)] \(tool): \(summary) — \(away ? "held for phone" : "desktop prompt")")
         if !away { respond(Data("{}".utf8)) }
+    }
+
+    /// Phone first: a desktop session's question or permission prompt waits for the phone until you open that session in Claude, or are
+    /// using the Mac with it already on screen. A CLI session has no focus signal, so any keyboard/mouse use counts.
+    private func belongsOnMac(_ cli: String, since: Date, idle: Double) -> Bool {
+        let active = idle < awayThreshold
+        guard let focus = store.desktopFocus(forCli: cli) else { return active }
+        if let opened = focus.lastFocused, opened > since { return true }
+        let claudeFrontmost = NSWorkspace.shared.frontmostApplication?.bundleIdentifier == "com.anthropic.claudefordesktop"
+        return active && claudeFrontmost && focus.isCurrent
     }
 
     private func dropPermission(_ cli: String) {
@@ -203,7 +214,7 @@ final class Daemon {
         guard let (cli, p) = permissions.first(where: { $0.value.info.requestId == requestId }) else {
             return "That request is no longer pending."
         }
-        guard let respond = p.respond else { return "Answer it on the Mac — you're at the keyboard." }
+        guard let respond = p.respond else { return "Answer it on the Mac — it's showing there." }
         let decision: [String: Any] = allow
             ? ["behavior": "allow"]
             : ["behavior": "deny", "message": "Denied from the companion phone."]
@@ -305,6 +316,10 @@ final class Daemon {
             let result = answer(requestId: rid, answers: answers)
             phone.send(WireMessage(type: .actionResult, action: "answer", requestId: rid, message: result), to: client)
             tick()
+        case .reply:
+            guard client.authed, let id = msg.sessionId, let text = msg.message else { return }
+            let result = reply(sessionId: id, text: text)
+            phone.send(WireMessage(type: .actionResult, action: "reply", sessionId: id, message: result), to: client)
         case .setDND:
             guard client.authed, let d = msg.dnd else { return }
             dnd = d
@@ -312,6 +327,21 @@ final class Daemon {
         default:
             break
         }
+    }
+
+    /// Sends a short message as your next prompt, for a desktop session whose turn ended on a question.
+    /// A held AskUserQuestion or permission prompt is answered through its own hook instead.
+    private func reply(sessionId: String, text: String) -> String {
+        let text = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !text.isEmpty else { return "Nothing to send" }
+        guard text.count <= 2000 else { return "Too long — keep replies under 2000 characters" }
+        guard let s = lastSnapshot?.sessions.first(where: { $0.id == sessionId }) else { return "Session not found" }
+        guard s.isDesktop else { return "Replies work for desktop sessions only" }
+        guard s.status == .waiting, s.prompt?.kind == .message else { return "That session isn't waiting for a reply" }
+        logLine("reply to \(sessionId) from phone (\(text.count) chars)")
+        return Actions.reply(sessionId: sessionId, text: text)
+            ? "Sent"
+            : "Couldn't type the reply — allow claude-companion-keys under Privacy & Security → Device Control and Data Access"
     }
 
     private func perform(_ action: String, sessionId: String) -> String {
@@ -328,7 +358,7 @@ final class Daemon {
             guard store.pid(forSessionId: sessionId) != nil else { return "Session not found" }
             return Actions.interrupt(sessionId: sessionId)
                 ? "Sent Esc to the session"
-                : "Couldn't press Esc — allow claude-companiond under Privacy → Accessibility"
+                : "Couldn't press Esc — allow claude-companion-keys under Privacy & Security → Device Control and Data Access"
         default:
             return "Unknown action"
         }

@@ -211,7 +211,7 @@ public struct WireMessage: Codable, Sendable {
         // server -> phone
         case hello, authOK, authFailed, pairCode, snapshot, actionResult
         // phone -> server
-        case auth, pairRequest, pair, action, decide, answer, setDND
+        case auth, pairRequest, pair, action, decide, answer, reply, setDND
     }
 
     public var type: Kind
@@ -228,6 +228,7 @@ public struct WireMessage: Codable, Sendable {
     /// Question text -> chosen label(s), comma-joined for multi-select.
     public var answers: [String: String]?
     public var dnd: DNDState?
+    /// Toast text from the Mac, or the text of a `reply`.
     public var message: String?
     /// Project folder for `newSessionIn`.
     public var folder: String?
